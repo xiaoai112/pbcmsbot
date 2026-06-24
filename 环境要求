@@ -1,0 +1,6 @@
+环境要求
+Node.js 18+
+npm
+PM2
+Nginx
+可选：MySQL 5.7+ 或 MySQL 8+
