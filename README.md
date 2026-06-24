@@ -209,10 +209,10 @@ location ^~ /api/ {
 
 ## 安全提醒
 
-- 不要泄露 `server/.env`
-- 不要泄露 `server/data/`
-- 不要泄露 `node_modules/`
-- 不要泄露真实 API Key、数据库密码、SMTP 授权码、易支付商户 Key
+- 不要提交 `server/.env`
+- 不要提交 `server/data/`
+- 不要提交 `node_modules/`
+- 不要提交真实 API Key、数据库密码、SMTP 授权码、易支付商户 Key
 - 上线后请启用 HTTPS
 - 正式环境不要继续使用默认管理员密码
 

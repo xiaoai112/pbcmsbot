@@ -1,23 +1,18 @@
 # AIGOU 部署说明
 
-## 1. 上传后目录
+## 1. 准备环境
 
-保持以下结构：
+服务器建议安装：
 
-```text
-aigou-admin/
-  dist/
-  server/
-  package.json
-  package-lock.json
-  DEPLOY.md
-```
+- Node.js 18+
+- npm
+- PM2
+- Nginx
+- 可选：MySQL 5.7+ 或 MySQL 8+
 
-本部署包包含完整的 `server/data/` 和 `server/.env` 初始文件，适合清空旧站后重新上传部署。
+## 2. 配置后端
 
-## 2. 首次部署配置
-
-如果服务器上还没有 `server/.env`：
+复制环境变量示例：
 
 ```bash
 cp server/.env.example server/.env
@@ -25,44 +20,77 @@ cp server/.env.example server/.env
 
 然后编辑 `server/.env`：
 
-- 默认后台账号是 `admin`，默认密码是 `Admin@123456`
-- 上线后建议把 `ADMIN_PASSWORD` 改成你自己的后台密码
-- `SESSION_SECRET` 改成随机长字符串
-- `APP_BASE_URL` 改成正式域名，例如 `https://admin.jindunlianghua.cn`
-- 使用 MySQL 时，把 `STORAGE=json` 改成 `STORAGE=mysql`，并填写数据库连接
-- `LLM_MODEL` 是默认模型，后台也可以读取接口模型列表后自由切换
+```env
+PORT=8787
+STORAGE=json
+APP_BASE_URL=https://example.com
+COOKIE_SECURE=true
 
-## 3. 安装依赖
+ADMIN_USER=admin
+ADMIN_PASSWORD=ChangeThisPasswordNow
+SESSION_SECRET=change-this-to-a-long-random-string
+```
+
+使用 MySQL 时，将 `STORAGE=json` 改为：
+
+```env
+STORAGE=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=aigou
+DB_PASSWORD=your_mysql_password
+DB_NAME=aigou_admin
+```
+
+初始化数据库：
+
+```bash
+mysql -uroot -p < server/schema.mysql.sql
+```
+
+## 3. 安装依赖并构建
 
 ```bash
 npm install
+npm run build
+node --check server/index.js
 ```
 
-## 4. 启动或重启
+## 4. 使用 PM2 启动
 
 ```bash
-npm start
+pm2 start server/index.js --name aigou-admin --time
+pm2 save
 ```
 
-PM2 方式：
+## 5. Nginx
+
+可以参考项目中的 `nginx-example.conf`。
+
+请把示例里的：
+
+- `example.com`
+- `/www/wwwroot/example.com`
+- SSL 证书路径
+
+替换成你自己的服务器配置。
+
+## 6. 验证
 
 ```bash
-pm2 restart aigou-admin
+curl -i http://127.0.0.1:8787/api/health
+curl -k -i https://example.com/api/health
 ```
 
-## 5. PbootCMS 站点接入
+浏览器访问：
 
-登录后台后：
+```text
+https://example.com/
+```
 
-1. 添加站点
-2. 进入桥接向导
-3. 下载 `aigou-publish.php`
-4. 上传到目标 PbootCMS 站点根目录
-5. 保存接口地址和栏目
+## 7. 安全提醒
 
-## 6. 更新后检查
-
-- 打开 `/api/health`，确认后端正常
-- 后台进入“模型设置”，填写 API 地址和 Key，点击“读取模型”
-- 选择模型并保存，再生成 1 篇文章测试
-- 如页面仍显示旧版本，清理浏览器缓存或硬刷新
+- 不要提交 `server/.env`
+- 不要提交 `server/data/`
+- 不要使用默认管理员密码上线
+- 支付、邮件、数据库、大模型 Key 都应只保存在服务器环境变量或后台配置中

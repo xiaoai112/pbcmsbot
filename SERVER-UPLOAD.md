@@ -1,21 +1,21 @@
-# AIGOU clean server upload guide
+# 服务器上传说明
 
-This package is built for `/www/wwwroot/aigold.jindunlianghua.cn`.
+这是通用部署模板。公开仓库中不要写真实域名、服务器路径、IP、账号或密钥。
 
-## Upload
+## 上传目录
 
-Upload `aigou-admin-full-clean.zip` or `aigou-admin-full-clean.tar.gz` to:
+示例：
 
 ```bash
-/www/wwwroot/aigold.jindunlianghua.cn
+/www/wwwroot/example.com
 ```
 
-## Fresh deploy
+请根据自己的服务器修改。
 
-Run these commands on the server:
+## 部署命令
 
 ```bash
-cd /www/wwwroot/aigold.jindunlianghua.cn
+cd /www/wwwroot/example.com
 
 BACKUP_DIR="/www/backup/aigou-$(date +%Y%m%d%H%M%S)"
 mkdir -p "$BACKUP_DIR"
@@ -25,64 +25,46 @@ cp -a server/.env "$BACKUP_DIR/.env" 2>/dev/null || true
 pm2 delete aigou-admin 2>/dev/null || true
 fuser -k 8787/tcp 2>/dev/null || true
 
-rm -rf aigou-admin
-unzip -o aigou-admin-full-clean.zip
-
-rm -rf ./dist ./server
-cp -af aigou-admin/. .
-
-if [ -d "$BACKUP_DIR/data" ]; then
-  rm -rf ./server/data
-  cp -af "$BACKUP_DIR/data" ./server/data
-fi
-
-if [ -f "$BACKUP_DIR/.env" ]; then
-  cp -af "$BACKUP_DIR/.env" ./server/.env
-fi
-
 npm install --omit=dev
+npm run build
 node --check server/index.js
-pm2 start server/index.js --name aigou-admin --update-env
+
+pm2 start server/index.js --name aigou-admin --update-env --time
 pm2 save
-nginx -s reload
 
-curl -i http://127.0.0.1:8787/api/health
-curl -k -i https://admin.jindunlianghua.cn/api/health
-```
-
-If your server only has `tar`, replace the unzip line with:
-
-```bash
-tar -xzf aigou-admin-full-clean.tar.gz
+nginx -t && nginx -s reload
 ```
 
 ## Nginx
 
-Only replace the Nginx config for `aigold.jindunlianghua.cn`. Do not change other site configs.
+请使用 `nginx-example.conf` 作为模板。
 
-Use the included `nginx-admin.jindunlianghua.cn.conf` as the complete template.
+需要替换：
 
-## Verify
+- `example.com`
+- `/www/wwwroot/example.com`
+- SSL 证书路径
+- Nginx 日志路径
 
-After deployment:
+不要把自己的真实站点配置提交到公开仓库。
+
+## 验证
 
 ```bash
-curl -s http://127.0.0.1:8787/ | grep index-
-curl -k -s https://aigold.jindunlianghua.cn/ | grep index-
+curl -i http://127.0.0.1:8787/api/health
+curl -k -i https://example.com/api/health
+curl -s https://example.com/ | grep index-
 ```
 
-Expected asset names in this build:
+## 默认登录
 
-```text
-index-CqcybETT.js
-index-C26xPo-L.css
-```
+首次启动时会根据 `server/.env` 创建管理员。
 
-The app no longer contains any `cachefix` redirect.
-
-Default login:
+示例：
 
 ```text
 username: admin
-password: Admin@123456
+password: ChangeThisPasswordNow
 ```
+
+正式部署前请修改默认密码。
